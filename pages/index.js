@@ -1,65 +1,75 @@
 import Head from 'next/head'
+import { useEffect, useState } from 'react'
+import config from '../config'
 import styles from '../styles/Home.module.css'
+import axios from 'axios';
+import { getCookie, setCookie } from '../session';
+import jwtDecode from 'jwt-decode';
+import { useRouter } from 'next/router';
 
-export default function Home() {
+export default function Home(props) {
+
+  // const { persons } = props;
+
+  const [persons, setPersons] = useState(null);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+
+  const router = useRouter();
+
+  useEffect(() => {
+    (async function () {
+      const res = await fetch(`${config.apiUrl}/persons`);
+      const persons = await res.json();
+      setPersons(persons);
+    })()
+  }, []);
+
+  const handleLogin = async () => {
+    try {
+      const res = await axios.post(`${config.apiUrl}/login`, { email: username, password });
+      alert('Login success. You are ' + res.data.user.first_name);
+      setCookie('token', res.data.token);
+      setCookie('user', JSON.stringify(res.data.user))
+      router.push('/main')
+    } catch (e) {
+      alert('Login Failed')
+    }
+
+  }
+
   return (
     <div className={styles.container}>
       <Head>
-        <title>Create Next App</title>
+        <title>Home</title>
         <link rel="icon" href="/favicon.ico" />
       </Head>
-
-      <main className={styles.main}>
-        <h1 className={styles.title}>
-          Welcome to <a href="https://nextjs.org">Next.js!</a>
-        </h1>
-
-        <p className={styles.description}>
-          Get started by editing{' '}
-          <code className={styles.code}>pages/index.js</code>
-        </p>
-
-        <div className={styles.grid}>
-          <a href="https://nextjs.org/docs" className={styles.card}>
-            <h3>Documentation &rarr;</h3>
-            <p>Find in-depth information about Next.js features and API.</p>
-          </a>
-
-          <a href="https://nextjs.org/learn" className={styles.card}>
-            <h3>Learn &rarr;</h3>
-            <p>Learn about Next.js in an interactive course with quizzes!</p>
-          </a>
-
-          <a
-            href="https://github.com/vercel/next.js/tree/master/examples"
-            className={styles.card}
-          >
-            <h3>Examples &rarr;</h3>
-            <p>Discover and deploy boilerplate example Next.js projects.</p>
-          </a>
-
-          <a
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-          >
-            <h3>Deploy &rarr;</h3>
-            <p>
-              Instantly deploy your Next.js site to a public URL with Vercel.
-            </p>
-          </a>
+      <div>
+        <h4>Login</h4>
+        <div>
+          <div>Username: <input type='text' value={username} onChange={e => setUsername(e.target.value)} /></div>
+          <div>Password: <input type='password' value={password} onChange={e => setPassword(e.target.value)} /></div>
+          <div><button onClick={handleLogin}>Login</button></div>
         </div>
-      </main>
+      </div>
+      <div>
+        {
+          !persons ? <div>Loading...</div> : persons.map((person, index) => (
+            <pre key={index}>{JSON.stringify(person)}</pre>
+          ))
+        }
+      </div>
 
-      <footer className={styles.footer}>
-        <a
-          href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Powered by{' '}
-          <img src="/vercel.svg" alt="Vercel Logo" className={styles.logo} />
-        </a>
-      </footer>
     </div>
   )
 }
+
+// export async function getStaticProps(context) {
+//   const res = await fetch(`${config.apiUrl}/persons`);
+//   const persons = await res.json();
+//   return {
+//     props: {
+//       persons
+//     }, // will be passed to the page component as props
+//   }
+// }
